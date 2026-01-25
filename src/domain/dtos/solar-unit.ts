@@ -16,4 +16,5 @@ export const CreateSolarUnitDto = z.object({
 export const GetAllEnergyGenerationRecordsQueryDto = z.object({
   groupBy: z.enum(["date"]).optional(),
   limit: z.string().min(1),
+
 });

@@ -2,6 +2,9 @@
 .env
 .env.local
 .env.* 
+dist
+
 
 node_modules
 .DS_Store
+ngrok.yml
