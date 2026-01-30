@@ -1,60 +1,3 @@
-// // this File do Add the New Data and Clear the MongoDB
-// import mongoose from "mongoose";
-// import { SolarUnit } from "./entities/SolarUnit";
-// import { EnergyGenarationRecord } from "./entities/EnergyGenarationRecord";
-// import { User } from "./entities/User";
-// import dotenv from "dotenv";
-// import { connectDB } from "./db";
-
-// dotenv.config();
-
-// async function seed() {
-//   try {
-//     // Connect to DB
-//     await connectDB();
-
-//     // Clear existing data
-//     await EnergyGenarationRecord.deleteMany({});
-//     await SolarUnit.deleteMany({});
-//     await User.deleteMany({});
-
-//     //Create a new user
-//     const user = await User.create({
-//       name: "Alice Example",
-//       email: "alice@example.com",
-//     });
-
-//     // Create a new solar unit linked to the user
-//     const solarUnit = await SolarUnit.create({
-//       userId: user._id,
-//       serialNumber: "SU-0001",
-//       installationDate: new Date("2025-09-21"),
-//       capacity: 5000,
-//       status: "ACTIVE",
-//     });
-
-//     // Create 10 sequential energy generation records every 2 hours
-//     const records = [];
-//     const baseDate = new Date("2025-09-21T00:00:00Z");
-//     for (let i = 0; i < 10; i++) {
-//       records.push({
-//         solarUnitId: solarUnit._id,
-//         timestamp: new Date(baseDate.getTime() + i * 2 * 60 * 60 * 1000), // every 2 hours
-//         energyGenerated: 100 + i * 10, // e.g., 100, 110, ..., 190
-//       });
-//     }
-//     await EnergyGenarationRecord.insertMany(records);
-
-//     console.log("Database seeded successfully.");
-//   } catch (err) {
-//     console.error("Seeding error:", err);
-//   } finally {
-//     await mongoose.disconnect();
-//   }
-// }
-
-// seed();
-
 import mongoose from "mongoose";
 import { SolarUnit } from "./entities/SolarUnit";
 import { EnergyGenarationRecord } from "./entities/EnergyGenarationRecord";
@@ -74,45 +17,21 @@ async function seed() {
     await SolarUnit.deleteMany({});
     await User.deleteMany({});
 
-    // Create a new user
-    const user = await User.create({
-      name: "Alice Example",
-      email: "alice@example.com",
-    });
+
 
     // Create a new solar unit linked to the user
     const solarUnit = await SolarUnit.create({
-      userId: user._id,
       serialNumber: "SU-0001",
       installationDate: new Date("2025-10-05"),
       capacity: 5000,
       status: "ACTIVE",
     });
 
-    //
-    // Create 10 sequential energy generation records every 2 hours
-    //   const records = [];
-    //   const baseDate = new Date("2025-10-05T00:00:00Z");
-    //   for (let i = 0; i < 10; i++) {
-    //     records.push({
-    //       solarUnitId: solarUnit._id,
-    //       timestamp: new Date(baseDate.getTime() + i * 2 * 60 * 60 * 1000), // every 2 hours
-    //       energyGenerated: 100 + i * 10, // e.g., 100, 110, ..., 190
-    //     });
-    //   }
-    //   await EnergyGenarationRecord.insertMany(records);
-
-    //   console.log("Database seeded successfully.");
-    // } catch (err) {
-    //   console.error("Seeding error:", err);
-    // } finally {
-    //   await mongoose.disconnect();
-
     //______Adding new part(seasonal variation Add in to the seed) in session 11__________
-    // Create historical energy generation records from Aug 1, 2025 8pm to Oct 12, 2025 8am every 2 hours
+    // Create historical energy generation records from Aug 1, 2025 8pm to Jan 01, 2026 8am every 2 hours
     const records = [];
     const startDate = new Date("2025-11-01T08:00:00Z"); // August 1, 2025 8am UTC
-    const endDate = new Date("2025-12-22T08:00:00Z"); // Desember 22, 2025 8am UTC
+    const endDate = new Date("2026-01-27T08:00:00Z"); // Desember 22, 2025 8am UTC
 
     let currentDate = new Date(startDate);
     let recordCount = 0;
@@ -155,7 +74,7 @@ async function seed() {
       // Add some random variation (±20%)
       const variation = 0.8 + Math.random() * 0.4;
       const energyGenerated = Math.round(
-        baseEnergy * timeMultiplier * variation
+        baseEnergy * timeMultiplier * variation,
       );
 
       records.push({
@@ -171,7 +90,7 @@ async function seed() {
     await EnergyGenarationRecord.insertMany(records);
 
     console.log(
-      `Database seeded successfully. Generated ${recordCount} energy generation records from August 1, 2025 8am to December 22, 2025 8am.`
+      `Database seeded successfully. Generated ${recordCount} energy generation records from August 1, 2026 8am to january 27, 2025 8am.`,
     );
   } catch (err) {
     console.error("Seeding error:", err);

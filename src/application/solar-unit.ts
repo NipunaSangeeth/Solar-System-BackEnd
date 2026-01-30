@@ -1,99 +1,15 @@
-// import { CreateSolarUnitDto } from "../domain/dtos/solar-unit";
-// import { SolarUnit } from "../infrastructure/entities/SolarUnit";
-// import { Request, Response } from "express";
-
-// export const getAllSolarUnits = async (req: Request, res: Response) => {
-//   try {
-//     const solarUnits = await SolarUnit.find();
-//     res.status(200).json(solarUnits);
-//   } catch (error) {
-//     res.status(500).json({ message: "Internal Server Error 🤔.." });
-//   }
-// };
-
-// export const createSolarUnit = async (req: Request, res: Response) => {
-//   try {
-//     //const { serialNumber, installationDate, capacity, status } = req.body;
-//     const result = CreateSolarUnitDto.safeParse(req.body);
-//     if(!result.success){
-//       return res.status(400).json({message:result.error.message})
-//     }
-
-//     const newSolarUnit = {
-//       serialNumber:result.data.serialNumber,
-//       installationDate:new Date(result.data.installationDate),
-//       capacity:result.data.capacity,
-//       status:result.data.status,
-//       userId:result.data.userId,
-//     };
-
-//     const creaetedSolarUnit = await SolarUnit.create(newSolarUnit);
-//     res.status(201).json(creaetedSolarUnit);
-//   } catch (error) {
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// };
-
-// export const getSolarUnitById = async (req: Request, res: Response) => {
-//   // params is assign to the id (/#api/#so-un/#assign to ID(id))
-//   try {
-//     const { id } = req.params;
-//     const solarUnit = await SolarUnit.findById(id);
-
-//     if (!solarUnit) {
-//       return res.status(404).json({ message: "Solar unit not found" });
-//     }
-//     res.status(200).json(solarUnit);
-//   } catch (error) {
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// };
-
-// export const updateSolarUnit = async (req: Request, res: Response) => {
-//   const { id } = req.params;
-//   const { serialNumber, installationDate, capacity, status } = req.body;
-//   const solarUnit = await SolarUnit.findById(id);
-
-//   if (!solarUnit) {
-//     return res.status(404).json({ message: "Solar unit not found" });
-//   }
-
-//   const updatedSolarUnit = await SolarUnit.findByIdAndUpdate(id, {
-//     serialNumber,
-//     installationDate,
-//     capacity,
-//     status,
-//   });
-
-//   res.status(200).json(updatedSolarUnit);
-// };
-
-// export const deleteSolarUnit = async (req: Request, res: Response) => {
-//   try {
-//     const { id } = req.params;
-//     const solarUnit = await SolarUnit.findById(id);
-
-//     if (!solarUnit) {
-//       return res.status(404).json({ message: "Solar unit not found" });
-//     }
-
-//     await SolarUnit.findByIdAndDelete(id);
-//     res.status(204).send();
-//   } catch (error) {
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// };
-
 import { z } from "zod";
 import { CreateSolarUnitDto } from "../domain/dtos/solar-unit";
 import { SolarUnit } from "../infrastructure/entities/SolarUnit";
 import { NextFunction, Request, Response } from "express";
 import { NotFoundError, ValidationError } from "../domain/error/errors";
+import { User } from "../infrastructure/entities/User";
+import { getAuth } from "@clerk/express";
 
 export const getAllSolarUnits = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const solarUnits = await SolarUnit.find();
@@ -106,7 +22,7 @@ export const getAllSolarUnits = async (
 export const createSolarUnitValidator = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const result = CreateSolarUnitDto.safeParse(req.body);
   if (!result.success) {
@@ -118,7 +34,7 @@ export const createSolarUnitValidator = (
 export const createSolarUnit = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const data: z.infer<typeof CreateSolarUnitDto> = req.body;
@@ -141,7 +57,7 @@ export const createSolarUnit = async (
 export const getSolarUnitById = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { id } = req.params;
@@ -156,10 +72,32 @@ export const getSolarUnitById = async (
   }
 };
 
-export const updateSolarUnit = async (
+// 2026/02/30 User Athentication find the User using the clerk UserId . 
+export const getSolarUnitForUser = async (
   req: Request,
   res: Response,
   next: NextFunction
+) => {
+  try {
+    const auth = getAuth(req);
+    const clerkUserId = auth.userId;
+
+    const user = await User.findOne({ clerkUserId });
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    const solarUnits = await SolarUnit.find({ userId: user._id });
+    res.status(200).json(solarUnits[0]);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateSolarUnit = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
 ) => {
   const { id } = req.params;
   const { serialNumber, installationDate, capacity, status } = req.body;
@@ -182,7 +120,7 @@ export const updateSolarUnit = async (
 export const deleteSolarUnit = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { id } = req.params;
