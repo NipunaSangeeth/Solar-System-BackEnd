@@ -9,9 +9,10 @@ export const authenticationMiddleware = (
   next: NextFunction
 ) => {
     const auth = getAuth(req);
-    console.log("what is the auth",auth)
     if (!auth.userId) {
         throw new UnauthorizedError("Unauthorized");
     }
+    console.log("what is the auth",auth)
+
     next();
 };
