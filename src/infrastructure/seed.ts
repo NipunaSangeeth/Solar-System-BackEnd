@@ -31,7 +31,7 @@ async function seed() {
     // Create historical energy generation records from Aug 1, 2025 8pm to Jan 01, 2026 8am every 2 hours
     const records = [];
     const startDate = new Date("2025-11-01T08:00:00Z"); // August 1, 2025 8am UTC
-    const endDate = new Date("2026-01-27T08:00:00Z"); // Desember 22, 2025 8am UTC
+    const endDate = new Date("2026-02-02T08:00:00Z"); // Desember 22, 2025 8am UTC
 
     let currentDate = new Date(startDate);
     let recordCount = 0;
@@ -90,7 +90,7 @@ async function seed() {
     await EnergyGenarationRecord.insertMany(records);
 
     console.log(
-      `Database seeded successfully. Generated ${recordCount} energy generation records from August 1, 2026 8am to january 27, 2025 8am.`,
+      `Database seeded successfully. Generated ${recordCount} energy generation records from August 1, 2026 8am to February 02, 2025 8am.`,
     );
   } catch (err) {
     console.error("Seeding error:", err);
