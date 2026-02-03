@@ -1,6 +1,5 @@
 // DTO -> Domain transfer object
 
-
 import { z } from "zod";
 
 export const CreateSolarUnitDto = z.object({
@@ -8,7 +7,7 @@ export const CreateSolarUnitDto = z.object({
   installationDate: z.string().min(1),
   capacity: z.number(),
   status: z.enum(["ACTIVE", "INACTIVE", "MAINTENANCE"]),
-  userId: z.string().min(1),
+  userId: z.string().optional(),
 });
 
 export const UpdateSolarUnitDto = z.object({
@@ -23,5 +22,4 @@ export const UpdateSolarUnitDto = z.object({
 export const GetAllEnergyGenerationRecordsQueryDto = z.object({
   groupBy: z.enum(["date"]).optional(),
   limit: z.string().min(1),
-
 });

@@ -17,8 +17,6 @@ async function seed() {
     await SolarUnit.deleteMany({});
     await User.deleteMany({});
 
-
-
     // Create a new solar unit linked to the user
     const solarUnit = await SolarUnit.create({
       serialNumber: "SU-0001",

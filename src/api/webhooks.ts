@@ -37,6 +37,7 @@ webhooksRouter.post(
             if (eventType === "user.updated") {
         const { id } = evt.data;
         const user = await User.findOneAndUpdate({ clerkUserId: id }, {
+          
           role: evt.data.public_metadata.role,
         });
       }
