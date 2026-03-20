@@ -1,8 +1,10 @@
 
+
 import { NextFunction, Request, Response } from "express";
 import { EnergyGenarationRecord } from "../infrastructure/entities/EnergyGenarationRecord";
 import { GetAllEnergyGenerationRecordsQueryDto } from "../domain/dtos/solar-unit";
 import { ValidationError } from "../domain/error/errors";
+import mongoose from "mongoose"; // [FIX] Added to allow string ID casting into MongoDB ObjectId
 
 export const getallEnergyGenerationRecordBySolarUnitId = async (
   req: Request,
@@ -10,95 +12,74 @@ export const getallEnergyGenerationRecordBySolarUnitId = async (
   next: NextFunction
 ) => {
   try {
-    // Aggregration Pipeline Used(Some Cool stuf In mongo can manage the data profetional way)
+    // 1. Extract the string 'id' from the router parameters (e.g., solar unit ID)
     const { id } = req.params;
-    // Validate the query parameters using the DTO
+
+    // 2. Validate incoming query params (eg. groupBy, limit) using Zod DTO
     const results = GetAllEnergyGenerationRecordsQueryDto.safeParse(req.query);
     
-    // Check if validation failed
+    // 3. If validation fails, throw a custom ValidationError to allow the global handler to respond
     if (!results.success) {
-      // If failed, throw a custom validation error
       throw new ValidationError(results.error.message);
     }
 
-    // Destructure validated data
+    // 4. Destructure the safe parsed values
     const { groupBy, limit } = results.data;
 
-    // Case 1: No GroupBy provided (Fetch raw data)
+    // --- CASE 1: No GroupBy provided (Fetch raw reading lists) ---
     if (!groupBy) {
-      // Find records by solar unit ID
       const energyGenerationRecords = await EnergyGenarationRecord.find({
-        solarUnitId: id,
-      }).sort({ timestamp: -1 }); // sort({ timestamp: -1 }) CAN cretae the data Assending or desending ORETR
+        solarUnitId: id, // Normal Find handles string to ObjectId conversion automatically
+      }).sort({ timeStamp: -1 }); // ⚠️ Used timeStamp (CamelCase) matching the schema
       
-      // Send response
       res.status(200).json(energyGenerationRecords);
-      // [SENIOR FIX] Add return to stop execution here, preventing "Headers already sent" error
-      return; 
+      return; // Stop execution early to prevent "Headers already sent" errors
     }
 
-    // [SENIOR FIX] Handle "undefined" string explicitly. Frontend might send limit='undefined' string.
-    // We check if limit is missing OR if it equals the string "undefined"
-    if (!limit || limit === "undefined") {
-      // Run aggregation without limiting
+    // --- [SENIOR FIX] Safe Limit Protection ---
+    // If the limit is missing ("undefined" string or NaN), default to a safe 7 days
+    let parsedLimit = parseInt(limit as string);
+    if (isNaN(parsedLimit) || parsedLimit <= 0) {
+      parsedLimit = 7; 
+    }
+
+    // --- CASE 2/3: GroupBy is "date" (Aggregate Totals) ---
+    if (groupBy === "date") {
       const energyGenarationRecords = await EnergyGenarationRecord.aggregate([
         {
+          $match: {
+            // 🛑 CRITICAL MATCH FILTER: Forces MongoDB to only pull data for this unit ONLY.
+            // Aggregations REQUIRE manual casting of string IDs into ObjectIds.
+            solarUnitId: new mongoose.Types.ObjectId(id), 
+          },
+        },
+        {
           $group: {
+            // Group matching documents by the formatted Date string
             _id: {
               date: {
                 $dateToString: { format: "%Y-%m-%d", date: "$timeStamp" },
               },
             },
+            // Sum all energy generated values inside the grouping bucket
             totalEnergy: { $sum: "$energyGenerated" },
           },
         },
         {
+          // Sort the buckets in descending date order (newest first)
           $sort: { "_id.date": -1 },
         },
+        {
+          // Limit the rows returned back directly on the database engine level (performance optimization)
+          $limit: parsedLimit, 
+        },
       ]);
-      
-      // Send response
+
       res.status(200).json(energyGenarationRecords);
-      // [SENIOR FIX] Add return to stop execution
       return;
     }
 
-    // Case 3: GroupBy is "date" AND we have a valid limit
-    if (groupBy === "date") {
-      // [SENIOR FIX] Parse the limit safely. We know it's not "undefined" here due to check above.
-      const parsedLimit = parseInt(limit as string);
-
-      const energyGenarationRecords = await EnergyGenarationRecord.aggregate([
-        {
-          $group: {
-            _id: {
-              date: {
-                $dateToString: { format: "%Y-%m-%d", date: "$timeStamp" },
-              },
-            },
-            totalEnergy: { $sum: "$energyGenerated" },
-          },
-        },
-
-        {
-          $sort: { "_id.date": -1 },
-        },
-        {
-          // [SENIOR FIX] Use the parsed integer. MongoDB requires an Integer, not NaN.
-          $limit: parsedLimit,
-        },
-      ]);
-
-      // Send the aggregated data
-      // No need to slice again because MongoDB already did the work with $limit
-      res
-        .status(200)
-        .json(energyGenarationRecords);
-    }
   } catch (error) {
-    // Pass error to global error handler
-    next(error);
-    // [SENIOR FIX] Removed res.status(500)... because next(error) already handles the response.
-    // calling res.json after next() causes the "Headers already sent" error.
+    next(error); // Pass the error safely back into our global handler
   }
 };
