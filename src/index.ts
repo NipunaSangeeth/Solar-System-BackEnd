@@ -10,6 +10,7 @@ import webhooksRouter from "./api/webhooks";
 import { clerkMiddleware } from "@clerk/express";
 import usersRouter from "./api/users";
 import { initializeScheduler } from "./infrastructure/scheduler";
+import weatherRouter from "./api/weather";
 
 const server = express();
 // CORS Rule (POST configure)
@@ -24,6 +25,8 @@ server.use(express.json());
 server.use("/api/solar-units", solarUnitRouter);
 server.use("/api/energy-generation-records", energyGenerationRecordRouter);
 server.use("/api/users", usersRouter);
+server.use("/api/weather", weatherRouter);
+
 
 
 server.use(globalErrorHandler);
