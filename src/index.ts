@@ -9,6 +9,7 @@ import cors from "cors";
 import webhooksRouter from "./api/webhooks";
 import { clerkMiddleware } from "@clerk/express";
 import usersRouter from "./api/users";
+import { initializeScheduler } from "./infrastructure/scheduler";
 
 const server = express();
 // CORS Rule (POST configure)
@@ -28,6 +29,8 @@ server.use("/api/users", usersRouter);
 server.use(globalErrorHandler);
 
 connectDB();
+// --- Initialize Background Cron Jobs ---
+initializeScheduler(); 
 
 const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => {
