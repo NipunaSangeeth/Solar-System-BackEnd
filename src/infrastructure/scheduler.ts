@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { syncEnergyGenerationRecords } from "../application/background/sync-energy-generation-records";
+import { generateInvoices } from "../application/background/generate-invoices";
 
 /**
  * Initializes and starts all automated background cron jobs.
@@ -27,3 +28,18 @@ export const initializeScheduler = () => {
     `[Scheduler] Energy generation records sync scheduled for: ${schedule}`,
   );
 };
+
+  // Run monthly invoice generation — at midnight on day 1 of each month
+  const billingSchedule = process.env.BILLING_CRON_SCHEDULE || "0 0 1 * *";
+
+  cron.schedule(billingSchedule, async () => {
+    console.log(`[${new Date().toISOString()}] Starting monthly billing generation...`);
+    try {
+      await generateInvoices();
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Billing failed:`, error);
+    }
+  });
+
+  console.log(`[Scheduler] Monthly billing generation scheduled for: ${billingSchedule}`);
+

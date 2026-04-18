@@ -12,6 +12,9 @@ import usersRouter from "./api/users";
 import { initializeScheduler } from "./infrastructure/scheduler";
 import weatherRouter from "./api/weather";
 import analyticsRouter from "./api/analytics";
+import { handleStripeWebhook } from "./application/payment";
+import invoiceRouter from "./api/invoice";
+import paymentRouter from "./api/payment";
 
 const server = express();
 // CORS Rule (POST configure)
@@ -20,6 +23,8 @@ server.use(cors({ origin: "http://localhost:5173" }));
 server.use(loggerMiddleware);
 
 server.use("/api/webhooks", webhooksRouter);
+server.use("/api/stripe/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
+
 server.use(clerkMiddleware())
 server.use(express.json());
 
@@ -29,7 +34,8 @@ server.use("/api/users", usersRouter);
 server.use("/api/weather", weatherRouter);
 server.use("/api/analytics", analyticsRouter); // Mount the new analytics controller
 
-
+server.use("/api/invoices", invoiceRouter);
+server.use("/api/payments", paymentRouter);
 
 
 server.use(globalErrorHandler);
