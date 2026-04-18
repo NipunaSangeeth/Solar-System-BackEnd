@@ -98,6 +98,7 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
       await Invoice.findByIdAndUpdate(invoiceId, {
         paymentStatus: "PAID",
         paidAt: new Date(),
+        stripeSessionId: session.id,  // ← Save for PDF lookup on complete page
       });
       console.log(`[Stripe] Invoice ${invoiceId} → PAID`);
     }

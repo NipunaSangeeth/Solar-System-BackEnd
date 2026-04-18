@@ -68,3 +68,21 @@ export const getAllInvoices = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+/**
+ * Controller: getInvoiceBySessionId
+ * Purpose: Finds the invoice linked to a completed Stripe session.
+ * Used by the payment complete page to fetch invoice data for PDF generation.
+ */
+export const getInvoiceBySessionId = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { sessionId } = req.params;
+
+    const invoice = await Invoice.findOne({ stripeSessionId: sessionId }).populate("solarUnitId");
+    if (!invoice) throw new NotFoundError("Invoice not found for this session");
+
+    res.status(200).json(invoice);
+  } catch (error) {
+    next(error);
+  }
+};
